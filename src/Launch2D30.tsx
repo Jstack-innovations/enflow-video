@@ -410,7 +410,86 @@ const STARS = Array.from({ length: 30 }, (_, i) => ({
   p: rnd(i + 17) * 6,
 }));
 
+const HookText: React.FC = () => {
+  const f = useCurrentFrame();
+  const p = sp(f, 1, 9);
+  const ring = pr(f, 2, 24);
+  return (
+    <>
+      <div
+        style={{
+          position: "absolute",
+          left: 540 - 100,
+          top: 330 - 100,
+          width: 200,
+          height: 200,
+          borderRadius: "50%",
+          border: `10px solid ${C.yellow}`,
+          opacity: (1 - ring) * 0.9,
+          transform: `scale(${0.4 + ring * 6})`,
+        }}
+      />
+      <div
+        style={{
+          position: "absolute",
+          left: 60,
+          width: 900,
+          top: 250,
+          textAlign: "center",
+          fontFamily: INTER,
+          fontWeight: 800,
+          fontSize: 136,
+          letterSpacing: -3,
+          lineHeight: 1.02,
+          color: "#fff",
+          opacity: Math.min(1, p * 3),
+          transform: `scale(${1 + (1 - p) * 1.1}) rotate(${(1 - p) * -5}deg)`,
+        }}
+      >
+        Hungry in <span style={{ color: C.yellow }}>Ojo?</span>
+      </div>
+      <div
+        style={{
+          position: "absolute",
+          left: 270,
+          top: 410,
+          width: 540 * pr(f, 10, 28),
+          height: 12,
+          borderRadius: 6,
+          background: C.red,
+        }}
+      />
+    </>
+  );
+};
+
 const Scene1: React.FC = () => {
+  const f = useCurrentFrame();
+  const zoom = 1 + 0.2 * (1 - pr(f, 0, 26));
+  const shake = f < 24 ? Math.sin(f * 2.7) * 14 * (1 - f / 24) : 0;
+  return (
+    <AbsoluteFill>
+      <AbsoluteFill
+        style={{
+          transform: `translate3d(${shake}px,${shake * 0.6}px,0) scale(${zoom})`,
+          transformOrigin: "50% 40%",
+        }}
+      >
+        <Scene1Inner />
+      </AbsoluteFill>
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          background: "#fff",
+          opacity: 0.9 * (1 - pr(f, 0, 8)),
+        }}
+      />
+    </AbsoluteFill>
+  );
+};
+
+const Scene1Inner: React.FC = () => {
   const f = useCurrentFrame();
   const drift = f * 0.28;
   const busX = -480 + f * 9.5;
@@ -522,7 +601,7 @@ const Scene1: React.FC = () => {
       })}
       {/* text */}
       <div style={{ opacity: 1 - swap, transform: `translate3d(0,${-swap * 60}px,0)` }}>
-        <Line text="Hungry in Ojo?" at={4} y={250} size={130} />
+        <HookText />
       </div>
       {f >= 64 && (
         <div style={{ opacity: swap, transform: `translate3d(0,${(1 - swap) * 60}px,0)` }}>
@@ -715,7 +794,7 @@ const KitchenScene: React.FC<{ f: number }> = ({ f }) => (
       />
     ))}
     <div style={{ position: "absolute", left: 760, top: 560, opacity: 1 }}>
-      <Clock f={f * 0.5} size={150} />
+      <Clock f={Math.floor(f / 4) * 2} size={150} />
     </div>
     {/* counter */}
     <div style={{ position: "absolute", left: 0, top: 1240, width: 1080, height: 260, background: "#4a3a5a" }} />
@@ -1043,7 +1122,9 @@ const STAGES = [
 
 const Scene4: React.FC<{ dishImages: string[]; name: string }> = ({ dishImages, name }) => {
   const f = useCurrentFrame();
-  const rise = pr(f, 0, 22);
+  const rise = pr(f, 0, 14);
+  const flipP = pr(f, 14, 50, EIO);
+  const flipScale = 1 - 0.38 * Math.sin(Math.PI * flipP);
   const stage = [...STAGES].reverse().find((s) => f >= s.from) ?? STAGES[0];
   const stageIdx = STAGES.indexOf(stage);
   const sf = f - stage.from;
@@ -1053,7 +1134,7 @@ const Scene4: React.FC<{ dishImages: string[]; name: string }> = ({ dishImages, 
   const oy = PHONE_Y + (19 + fp.y) * S4;
   const tap = TAPS.find((t) => f >= t && f < t + 16);
   const tapK = tap === undefined ? 0 : (f - tap) / 16;
-  const fingerVis = pr(f, 8, 20) * (1 - pr(f, 296, 308));
+  const fingerVis = pr(f, 50, 60) * (1 - pr(f, 296, 308));
   // +1 flight
   const fly = pr(f, 58, 80, EIO);
   const flyX = 270 + (322 - 270) * fly;
@@ -1078,11 +1159,44 @@ const Scene4: React.FC<{ dishImages: string[]; name: string }> = ({ dishImages, 
       <div style={{ position: "absolute", left: 60, width: 900, top: 238, textAlign: "center", fontFamily: INTER, fontWeight: 500, fontSize: 28, color: `${GOLD}`, opacity: pr(f, 10, 24) }}>
         {name}, a LASU student, orders on Enflow
       </div>
-      {/* phone */}
-      <div style={{ position: "absolute", left: PHONE_X, top: PHONE_Y + (1 - rise) * 1300, willChange: "transform" }}>
-        <IPhoneFrame scale={S4}>
-          <AppScreen f={f} dishImages={dishImages} name={name} />
-        </IPhoneFrame>
+      {/* phone: rises, zooms out, flips 360, lands */}
+      <div
+        style={{
+          position: "absolute",
+          left: PHONE_X,
+          top: PHONE_Y + (1 - rise) * 1300,
+          width: 438 * S4,
+          height: 910 * S4,
+          transformStyle: "preserve-3d",
+          transform: `perspective(2400px) scale(${flipScale}) rotateY(${flipP * 360}deg)`,
+          willChange: "transform",
+        }}
+      >
+        <div style={{ position: "absolute", inset: 0, backfaceVisibility: "hidden" }}>
+          <IPhoneFrame scale={S4}>
+            <AppScreen f={f} dishImages={dishImages} name={name} />
+          </IPhoneFrame>
+        </div>
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            transform: "rotateY(180deg)",
+            backfaceVisibility: "hidden",
+            borderRadius: 78,
+            background: "linear-gradient(145deg,#ecd08a,#b8873a)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <div style={{ position: "absolute", left: 40, top: 40, width: 190, height: 190, borderRadius: 44, background: "rgba(20,16,10,0.25)" }}>
+            {[[24, 24], [24, 100], [100, 62]].map(([x, y], i) => (
+              <div key={i} style={{ position: "absolute", left: x, top: y, width: 62, height: 62, borderRadius: "50%", background: "#14100a", border: "6px solid #6b5420" }} />
+            ))}
+          </div>
+          <Mark color={C.ink} s={2.2} />
+        </div>
       </div>
       {/* +1 */}
       {fly > 0 && fly < 1 && (
