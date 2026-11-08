@@ -48,6 +48,7 @@ export type Launch2D30Props = {
   studentName: string;
   music: boolean;
   voice: boolean;
+  sfx: boolean;
 };
 
 export const LAUNCH2D30_LEN = 900;
@@ -60,6 +61,7 @@ export const launch2D30Defaults: Launch2D30Props = {
   studentName: "Amaka",
   music: true,
   voice: true,
+  sfx: true,
 };
 
 const C = {
@@ -1231,6 +1233,7 @@ export const Launch2D30: React.FC<Launch2D30Props> = ({
   studentName,
   music,
   voice,
+  sfx,
 }) => {
   return (
     <AbsoluteFill style={{ background: C.night, overflow: "hidden" }}>
@@ -1242,6 +1245,7 @@ export const Launch2D30: React.FC<Launch2D30Props> = ({
           }
         />
       )}
+      {sfx && <Audio src={staticFile("enflow-sfx.mp3")} volume={0.7} />}
       {voice &&
         VOICE.map((v) => (
           <Sequence key={v.file} from={v.from}>
